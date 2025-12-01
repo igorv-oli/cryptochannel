@@ -1,0 +1,10 @@
+# Arquivos de Build do Kernel (LKM)
+*.o
+*.ko
+*.mod.c
+*.mod
+*.symvers
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
