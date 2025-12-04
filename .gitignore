@@ -6,5 +6,7 @@
 *.symvers
 *.cmd
 .tmp_versions/
+.vscode/
+build
 modules.order
 Module.symvers
