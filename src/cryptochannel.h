@@ -56,6 +56,6 @@ struct cryptochannel_dev {
     wait_queue_head_t write_queue;
 };
 
-DECLARE_KFIFO(crypto_buffer_data, char, BUFFER_SIZE);
+// DECLARE_KFIFO(crypto_buffer_data, char, BUFFER_SIZE);
 
 #endif // __CRYPTOCHANNEL_H__
