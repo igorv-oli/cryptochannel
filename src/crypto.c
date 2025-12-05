@@ -2,25 +2,21 @@
 #include <linux/string.h>
 #include "cryptochannel.h"
 
-/* Variáveis globais */
-char crypto_key[16] = "123456789ABCDEF";
-int crypto_mode = 0;
-
 /* Exemplo temporário: cifra XOR simples (placeholder) */
-int crypto_encrypt(const char *in, char *out, size_t len)
+int encrypt_msg(const char *plaintext, size_t len, char *ciphertext)
 {
     size_t i;
     for (i = 0; i < len; i++)
-        out[i] = in[i] ^ 0xAA;
+        ciphertext[i] = plaintext[i] ^ 0xAA;
 
     return 0;
 }
 
-int crypto_decrypt(const char *in, char *out, size_t len)
+int decrypt_msg(const char *ciphertext, size_t len, char *plaintext)
 {
     size_t i;
     for (i = 0; i < len; i++)
-        out[i] = in[i] ^ 0xAA;
+        plaintext[i] = ciphertext[i] ^ 0xAA;
 
     return 0;
 }
