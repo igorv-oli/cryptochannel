@@ -13,7 +13,7 @@ MODULE_AUTHOR("Daniel Suzuki Naves e Igor Oliveira");
 MODULE_DESCRIPTION("Modulo cryptochannel para SO.");
 
 // Instância global do nosso dispositivo
-static struct cryptochannel_dev crypto_dev;
+struct cryptochannel_dev crypto_dev;
 
 // Variáveis de estado e criptografia (apenas stubs para compilar)
 // Estas variáveis precisam ser definidas em *algum lugar* para que o linker não reclame.
@@ -29,7 +29,8 @@ static int cryptochannel_open(struct inode *inode, struct file *file);
 static int cryptochannel_release(struct inode *inode, struct file *file);
 ssize_t cryptochannel_read(struct file *file, char __user *buf, size_t count, loff_t *f_pos);
 ssize_t cryptochannel_write(struct file *file, const char __user *buf, size_t count, loff_t *f_pos);
-
+int cryptochannel_procfs_init(void);
+void cryptochannel_procfs_exit(void);
 
 // Tabela de operações do arquivo
 static const struct file_operations cryptochannel_fops = {
@@ -39,7 +40,6 @@ static const struct file_operations cryptochannel_fops = {
     .read = cryptochannel_read,
     .write = cryptochannel_write,
 };
-
 
 // Funções de operação (stubs)
 static int cryptochannel_open(struct inode *inode, struct file *file)
@@ -213,6 +213,25 @@ ssize_t cryptochannel_write(struct file *file, const char __user *buf, size_t co
     return count; // Retorna o número de bytes DE TEXTO PURO que foram aceitos
 }
 
+// Funcao auxiliar para limpar o dispositivo de caractere
+static void crypto_cleanup_device(void)
+{
+    cdev_del(&crypto_dev.cdev);
+    unregister_chrdev_region(crypto_dev.dev_num, NUM_DEVICES);
+}
+
+// Funcao auxiliar para limpar TUDO (chamada apenas no exit)
+static void crypto_full_cleanup(void)
+{
+    // 1. Remover a interface /proc (Se foi inicializada)
+    cryptochannel_procfs_exit();
+
+    // 2. Limpar o dispositivo (cdev, Major/Minor)
+    crypto_cleanup_device();
+
+    // 3. Liberar o kfifo (necessario se usou kfifo_alloc)
+    kfifo_free(&crypto_dev.buf);
+}
 
 // Função chamada na inserção do módulo (insmod)
 static int __init cryptochannel_init(void)
@@ -233,14 +252,13 @@ static int __init cryptochannel_init(void)
     init_waitqueue_head(&crypto_dev.read_queue);
     init_waitqueue_head(&crypto_dev.write_queue);
 
-    // 3. Inicializar o KFIFO (Usando alocação dinâmica kfifo_alloc)
+    // 3. Inicializar o KFIFO (Alocação dinâmica)
     ret = kfifo_alloc(&crypto_dev.buf, BUFFER_SIZE, GFP_KERNEL);
     if (ret) {
-    	printk(KERN_ALERT "cryptochannel: Falha ao alocar kfifo.\n");
-    	unregister_chrdev_region(crypto_dev.dev_num, NUM_DEVICES);
-    	return ret;
+        printk(KERN_ALERT "cryptochannel: Falha ao alocar kfifo.\n");
+        unregister_chrdev_region(crypto_dev.dev_num, NUM_DEVICES); // <--- LIMPEZA 1
+        return ret;
     }
-
 
     // 4. Inicializar e adicionar a estrutura cdev
     cdev_init(&crypto_dev.cdev, &cryptochannel_fops);
@@ -248,8 +266,19 @@ static int __init cryptochannel_init(void)
 
     ret = cdev_add(&crypto_dev.cdev, crypto_dev.dev_num, NUM_DEVICES);
     if (ret < 0) {
-        unregister_chrdev_region(crypto_dev.dev_num, NUM_DEVICES);
+        kfifo_free(&crypto_dev.buf); // <--- LIMPEZA 2
+        unregister_chrdev_region(crypto_dev.dev_num, NUM_DEVICES); 
         printk(KERN_ALERT "cryptochannel: Falha ao adicionar o dispositivo.\n");
+        return ret;
+    }
+
+    // 5. Inicializar a interface /proc
+    ret = cryptochannel_procfs_init();
+    if (ret) {
+        // Se o procfs falhar, DESFAZER TUDO O QUE FOI FEITO.
+        crypto_cleanup_device(); // Limpa cdev e Major/Minor
+        kfifo_free(&crypto_dev.buf); // Limpa o kfifo
+        printk(KERN_ALERT "cryptochannel: Falha ao inicializar /proc.\n");
         return ret;
     }
 
@@ -262,17 +291,11 @@ static void __exit cryptochannel_exit(void)
 {
     printk(KERN_INFO "cryptochannel: Removendo o modulo...\n");
 
-    // 1. Desalocar o kfifo
-    kfifo_free(&crypto_dev.buf);
-
-    // 2. Remover o dispositivo do kernel
-    cdev_del(&crypto_dev.cdev);
-
-    // 3. Liberar os Major/Minor numbers
-    unregister_chrdev_region(crypto_dev.dev_num, NUM_DEVICES);
+    crypto_full_cleanup();
 
     printk(KERN_INFO "cryptochannel: Modulo descarregado.\n");
 }
 
 module_init(cryptochannel_init);
 module_exit(cryptochannel_exit);
+EXPORT_SYMBOL(crypto_dev);

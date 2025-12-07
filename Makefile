@@ -3,7 +3,7 @@ MODULENAME := cryptochannel
 
 # Objetos que compõem o módulo (.c → .o)
 obj-m := cryptochannel.o
-cryptochannel-objs := src/cryptochannel.o src/crypto.o
+cryptochannel-objs := src/cryptochannel.o src/crypto.o src/procfs.o
 
 # Diretórios
 KDIR := /lib/modules/$(shell uname -r)/build

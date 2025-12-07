@@ -31,6 +31,8 @@ extern size_t total_messages_sent;
 extern size_t total_bytes_encrypted;
 extern size_t total_errors;
 
+int cryptochannel_procfs_init(void);
+void cryptochannel_procfs_exit(void);
 
 // ==========================================================
 // 3. Funções de Criptografia (Componente 2)
@@ -58,4 +60,7 @@ struct cryptochannel_dev {
 
 // DECLARE_KFIFO(crypto_buffer_data, char, BUFFER_SIZE);
 
-#endif // __CRYPTOCHANNEL_H__
+// Declara a instancia principal do dispositivo como EXTERN para que outros .c possam acessa-la
+extern struct cryptochannel_dev crypto_dev;
+
+#endif // __CRYPTOCHANNEL_H_
