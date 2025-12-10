@@ -9,14 +9,13 @@
 #include "cryptochannel.h"
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Daniel Suzuki Naves e Igor Oliveira");
+MODULE_AUTHOR("Daniel Suzuki Naves e Igor Vinicius De Oliveira");
 MODULE_DESCRIPTION("Modulo cryptochannel para SO.");
 
 // Instância global do nosso dispositivo
 struct cryptochannel_dev crypto_dev;
 
 // Variáveis de estado e criptografia (apenas stubs para compilar)
-// Estas variáveis precisam ser definidas em *algum lugar* para que o linker não reclame.
 char crypto_key[16] = {0};
 int crypto_mode = 0;
 size_t total_messages_sent = 0;
@@ -106,7 +105,7 @@ ssize_t cryptochannel_read(struct file *file, char __user *buf, size_t count, lo
 
     if (decrypted_len < 0) {
         printk(KERN_ALERT "cryptochannel: Falha na decifragem.\n");
-        // TODO: Incrementar total_errors
+        //Incrementar total_errors
         kfree(kbuf_cipher);
         kfree(kbuf_plain);
         mutex_unlock(&crypto_dev.lock);
@@ -164,7 +163,7 @@ ssize_t cryptochannel_write(struct file *file, const char __user *buf, size_t co
 
     if (encrypted_len < 0) {
         printk(KERN_ALERT "cryptochannel: Falha na criptografia.\n");
-        // TODO: Incrementar total_errors
+        //Incrementar total_errors
         kfree(kbuf_in);
         kfree(kbuf_crypto);
         return encrypted_len;

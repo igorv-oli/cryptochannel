@@ -5,7 +5,7 @@
 
 // Garante que o linker saiba onde estão as variaveis globais
 extern char crypto_key[16];
-extern int crypto_mode; // Nao usaremos o modo por enquanto, mas ele existe.
+extern int crypto_mode;
 
 /* * Função Auxiliar: Executa XOR usando a chave global (crypto_key)
  * Implementa uma variação simples do Vigenère/XOR com chave
